@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "modul-11"
+version = "0.1.0"
+description = ""
+authors = ["Invil124 <113246425+Invil124@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "modul_11"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+sqlalchemy = "^2.0.3"
+fastapi = "^0.91.0"
+alembic = "^1.9.3"
+psycopg2 = "^2.9.5"
+uvicorn = "^0.20.0"
+pydantic = {extras = ["email"], version = "^1.10.4"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
