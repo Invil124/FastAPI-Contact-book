@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredent
 from sqlalchemy.orm import Session
 
 from src.database.connect import get_db
+from src.database.models import User
 from src.schemas import UserModel, UserResponse, TokenModel
 from src.repository import users as repository_users
 from src.services.auth import auth_service
@@ -16,14 +17,12 @@ security = HTTPBearer()
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(body: UserModel, db: Session = Depends(get_db)):
     exist_user = await repository_users.get_user_by_username(body.username, db)
-    exist_email = await repository_users.get_user_by_email(body.email, db)
+    exist_email = db.query(User).filter(User.username == body.email).first()
     if exist_user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account already exists")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists")
     if exist_email:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already in use")
-    if body.password1 != body.password2:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password and repeat password didn't match")
-    body.password1 = auth_service.get_password_hash(body.password1)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use")
+    body.password = auth_service.get_password_hash(body.password)
     new_user = await repository_users.create_user(body, db)
     return {"user": new_user, "detail": "User successfully created"}
 
@@ -32,9 +31,9 @@ async def signup(body: UserModel, db: Session = Depends(get_db)):
 async def login(body: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = await repository_users.get_user_by_username(body.username, db)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid username")
     if not auth_service.verify_password(body.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password")
     # Generate JWT
     access_token = await auth_service.create_access_token(data={"sub": user.username})
     refresh_token = await auth_service.create_refresh_token(data={"sub": user.username})
@@ -49,7 +48,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Security(sec
     user = await repository_users.get_user_by_username(username, db)
     if user.refresh_token != token:
         await repository_users.update_token(user, None, db)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid refresh token")
 
     access_token = await auth_service.create_access_token(data={"sub": username})
     refresh_token = await auth_service.create_refresh_token(data={"sub": username})

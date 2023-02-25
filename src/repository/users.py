@@ -8,15 +8,11 @@ async def get_user_by_username(username: str, db: Session) -> User:
     return db.query(User).filter(User.username == username).first()
 
 
-async def get_user_by_email(email: str, db: Session) -> User:
-    return db.query(User).filter(User.username == email).first()
-
-
 async def create_user(body: UserModel, db: Session) -> User:
     new_user = User(
         username=body.username,
         email=body.email,
-        password=body.password1
+        password=body.password
     )
     db.add(new_user)
     db.commit()
