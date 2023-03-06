@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 
 from fastapi import Path, Depends, HTTPException, status, APIRouter
+from fastapi_limiter.depends import RateLimiter
 
 from sqlalchemy.orm import Session
 
@@ -42,12 +43,15 @@ async def find_contact_by_query(contact_first_name: str = None, contact_second_n
 
 
 @router.get("/birthday/", response_model=List[RespondsContact])
-async def get_nearest_birthday(db: Session = Depends(get_db), current_user: User = Depends(auth_service.get_current_user)):
+async def get_nearest_birthday(db: Session = Depends(get_db),
+                               current_user: User = Depends(auth_service.get_current_user)):
     contacts = await contact_repository.get_nearest_birthday(current_user, db)
     return contacts
 
 
-@router.post("/create", status_code=status.HTTP_201_CREATED, response_model=RespondsContact)
+@router.post("/create", status_code=status.HTTP_201_CREATED, response_model=RespondsContact,
+             description='No more than 3 requests per minute',
+             dependencies=[Depends(RateLimiter(times=3, seconds=60))])
 async def create_contact(body: ContactModel, db: Session = Depends(get_db),
                          current_user: User = Depends(auth_service.get_current_user)):
     contact = await contact_repository.create_contact(body, current_user, db)

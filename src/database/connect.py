@@ -4,11 +4,9 @@ import pathlib
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-file_config = pathlib.Path(__file__).parent.joinpath("config.ini")
-config = configparser.ConfigParser()
-config.read(file_config)
+from src.conf.config import settings
 
-DATABASE_URL = config.get("DB", "url")
+DATABASE_URL = settings.postgres_url
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

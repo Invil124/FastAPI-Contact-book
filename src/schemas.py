@@ -37,6 +37,7 @@ class UserDb(BaseModel):
     username: str
     email: str
     created_at: datetime
+    avatar: str
 
     class Config:
         orm_mode = True
@@ -52,3 +53,6 @@ class TokenModel(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
 
+
+class RequestEmail(BaseModel):
+    email: EmailStr
